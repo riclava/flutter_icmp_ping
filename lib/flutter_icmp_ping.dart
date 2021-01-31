@@ -74,13 +74,13 @@ class Ping {
   /// Wait [interval] seconds between sending each packet.
   /// The [timeout] is the time to wait for a response, in seconds.
   static Future<Stream<PingData>> start(String host,
-      {int count, double interval, double timeout, bool ipv6}) async {
+      {int count, double interval, double timeout, bool ipv6, String hexPattern}) async {
     print(defaultTargetPlatform);
     if (defaultTargetPlatform == TargetPlatform.iOS) {
-      return _PingiOS.start(host, count, interval, timeout, ipv6);
+      return _PingiOS.start(host, count, interval, timeout, ipv6, hexPattern);
     }
     if (defaultTargetPlatform == TargetPlatform.android) {
-      return _PingAndroid.start(host, count, interval, timeout, ipv6);
+      return _PingAndroid.start(host, count, interval, timeout, ipv6, hexPattern);
     }
     return null;
   }
@@ -147,8 +147,9 @@ class _PingiOS {
   );
 
   /// Start sending ICMP ECHO_REQUEST to network hosts
+  /// TODO hexPattern does not support currently
   static Future<Stream<PingData>> start(String host, int count, double interval,
-      double timeout, bool ipv6) async {
+      double timeout, bool ipv6, String hexPattern) async {
     await _methodCh.invokeMethod('start', {
       'host': host,
       'count': count,
@@ -244,7 +245,7 @@ class _PingAndroid {
 
   /// Start sending ICMP ECHO_REQUEST to network hosts
   static Future<Stream<PingData>> start(String host, int count, double interval,
-      double timeout, bool ipv6) async {
+      double timeout, bool ipv6, String hexPattern) async {
     if (_process != null) {
       throw Exception('ping is already running');
     }
@@ -252,6 +253,7 @@ class _PingAndroid {
     if (count != null) params.add('-c $count');
     if (timeout != null) params.add('-W $timeout');
     if (interval != null) params.add('-i $interval');
+    if (hexPattern != null) params.add('-p $hexPattern')
     _process = await Process.start(
         (ipv6 ?? false) ? 'ping6' : 'ping', [...params, host]);
     _process.exitCode.then((value) {
